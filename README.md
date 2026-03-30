@@ -6,6 +6,10 @@ A Python-based voice emotion detection system using Hugging Face's pre-trained m
 - Detects 7 emotions: happy, sad, angry, neutral, fear, disgust, surprise
 - Uses free Hugging Face models (no paid APIs)
 - Supports .wav audio files
+- **🎤 Live voice recording** - Record directly from microphone
+- **🌐 Web interface** - Beautiful browser-based UI
+- **🖥️ Desktop GUI** - Native application
+- **💻 CLI interface** - Command-line tool
 - Provides confidence scores for predictions
 - Beginner-friendly with detailed comments
 
@@ -38,8 +42,33 @@ See INSTALLATION.md for detailed setup instructions.
 
 ## Usage
 
-```python
+### Web App (Recommended)
+```bash
+python web_app.py
+# Open http://localhost:5000 in browser
+# Upload file OR record live audio
+```
+
+### Live Recording
+```bash
+# Record from microphone
+python live_recorder.py
+
+# Continuous recording
+python live_recorder.py --continuous
+
+# List audio devices
+python live_recorder.py --list-devices
+```
+
+### Command Line
+```bash
 python main.py --audio sample_audio/test.wav
+```
+
+### Desktop GUI
+```bash
+python gui_simple.py
 ```
 
 ## Model Information

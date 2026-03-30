@@ -10,7 +10,11 @@ transformers>=4.30.0
 # Audio Processing
 librosa>=0.10.0
 soundfile>=0.12.0
+sounddevice>=0.4.6
 numpy>=1.24.0
 
 # Utilities
 scipy>=1.10.0
+
+# Web Application
+flask>=2.3.0

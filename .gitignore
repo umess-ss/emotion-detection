@@ -30,6 +30,11 @@ sample_audio/*.wav
 sample_audio/*.mp3
 !sample_audio/.gitkeep
 
+# Recordings
+recordings/*.wav
+recordings/*.mp3
+!recordings/.gitkeep
+
 # Temporary files
 temp/
 *.log

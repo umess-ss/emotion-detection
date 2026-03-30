@@ -219,7 +219,16 @@
             <input type="file" id="audioFile" accept="audio/*">
         </div>
         
-        <p id="fileName" style="text-align: center; color: #666;"></p>
+        <div style="text-align: center; margin: 20px 0; color: #666;">
+            <p>— OR —</p>
+        </div>
+        
+        <button class="btn" id="recordBtn" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            🎤 Record Live Audio
+        </button>
+        
+        <p id="fileName" style="text-align: center; color: #666; margin-top: 10px;"></p>
+        <p id="recordStatus" style="text-align: center; color: #f5576c; margin-top: 10px;"></p>
         
         <button class="btn" id="analyzeBtn" disabled>Analyze Emotion</button>
         
@@ -249,12 +258,17 @@
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('audioFile');
         const fileName = document.getElementById('fileName');
+        const recordBtn = document.getElementById('recordBtn');
+        const recordStatus = document.getElementById('recordStatus');
         const analyzeBtn = document.getElementById('analyzeBtn');
         const loading = document.getElementById('loading');
         const result = document.getElementById('result');
         const error = document.getElementById('error');
         
         let selectedFile = null;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
         
         // Click to upload
         uploadArea.addEventListener('click', () => fileInput.click());
@@ -291,6 +305,50 @@
                 analyzeBtn.disabled = false;
                 result.classList.remove('show');
                 error.classList.remove('show');
+            }
+        });
+        
+        // Record button
+        recordBtn.addEventListener('click', async () => {
+            if (!isRecording) {
+                // Start recording
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+                    
+                    mediaRecorder.ondataavailable = (event) => {
+                        audioChunks.push(event.data);
+                    };
+                    
+                    mediaRecorder.onstop = async () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        selectedFile = new File([audioBlob], 'recording.wav', { type: 'audio/wav' });
+                        fileName.textContent = '🎤 Recording captured!';
+                        analyzeBtn.disabled = false;
+                        result.classList.remove('show');
+                        error.classList.remove('show');
+                        
+                        // Stop all tracks
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+                    
+                    mediaRecorder.start();
+                    isRecording = true;
+                    recordBtn.textContent = '⏹️ Stop Recording';
+                    recordBtn.style.background = 'linear-gradient(135deg, #ff6b6b 0%, #c92a2a 100%)';
+                    recordStatus.textContent = '🔴 Recording... Speak now!';
+                    
+                } catch (err) {
+                    showError('Microphone access denied or not available: ' + err.message);
+                }
+            } else {
+                // Stop recording
+                mediaRecorder.stop();
+                isRecording = false;
+                recordBtn.textContent = '🎤 Record Live Audio';
+                recordBtn.style.background = 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+                recordStatus.textContent = '';
             }
         });
         
