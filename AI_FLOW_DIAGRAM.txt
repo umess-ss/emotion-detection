@@ -1,0 +1,317 @@
+================================================================================
+                    AI/ML IMPLEMENTATION FLOW DIAGRAM
+================================================================================
+
+1. USER INPUT
+================================================================================
+   
+   User speaks: "I am so happy today!"
+        |
+        v
+   Microphone captures sound
+        |
+        v
+   Digital Audio: [0.1, 0.3, -0.2, 0.5, 0.1, ...]
+   (48,000 samples for 3 seconds at 16kHz)
+
+
+2. AUDIO PREPROCESSING (audio_processor.py)
+================================================================================
+   
+   Raw Audio
+        |
+        v
+   ┌─────────────────────────────────────┐
+   │  Resample to 16kHz                  │
+   │  Convert to Mono                    │
+   │  Normalize to [-1, 1]               │
+   │  Trim Silence                       │
+   └─────────────────────────────────────┘
+        |
+        v
+   Clean Audio Waveform
+
+
+3. FEATURE EXTRACTION (emotion_detector.py)
+================================================================================
+   
+   Clean Audio
+        |
+        v
+   ┌─────────────────────────────────────┐
+   │  AutoFeatureExtractor               │
+   │  - Convert to mel-spectrogram       │
+   │  - Apply padding                    │
+   │  - Create tensors                   │
+   └─────────────────────────────────────┘
+        |
+        v
+   Feature Tensor [1, 149, 1024]
+   (batch, time_steps, features)
+
+
+4. AI MODEL - CNN LAYERS (HuBERT)
+================================================================================
+   
+   Feature Tensor
+        |
+        v
+   ┌─────────────────────────────────────┐
+   │  Layer 1: Conv1D (512 channels)     │
+   │  Layer 2: Conv1D (512 channels)     │
+   │  Layer 3: Conv1D (512 channels)     │
+   │  Layer 4: Conv1D (512 channels)     │
+   │  Layer 5: Conv1D (512 channels)     │
+   │  Layer 6: Conv1D (512 channels)     │
+   │  Layer 7: Conv1D (512 channels)     │
+   │                                     │
+   │  Each layer:                        │
+   │  - Convolution                      │
+   │  - Batch Normalization              │
+   │  - ReLU Activation                  │
+   │  - Dropout                          │
+   └─────────────────────────────────────┘
+        |
+        v
+   Encoded Features [1, 149, 1024]
+
+
+5. AI MODEL - TRANSFORMER LAYERS (HuBERT)
+================================================================================
+   
+   Encoded Features
+        |
+        v
+   ┌─────────────────────────────────────┐
+   │  24 Transformer Encoder Layers      │
+   │                                     │
+   │  Each layer contains:               │
+   │  ┌───────────────────────────────┐ │
+   │  │ Multi-Head Self-Attention     │ │
+   │  │ (16 attention heads)          │ │
+   │  │                               │ │
+   │  │ Q = Query                     │ │
+   │  │ K = Key                       │ │
+   │  │ V = Value                     │ │
+   │  │                               │ │
+   │  │ Attention = softmax(QK^T/√d)V │ │
+   │  └───────────────────────────────┘ │
+   │           ↓                         │
+   │  ┌───────────────────────────────┐ │
+   │  │ Layer Normalization           │ │
+   │  └───────────────────────────────┘ │
+   │           ↓                         │
+   │  ┌───────────────────────────────┐ │
+   │  │ Feed-Forward Network          │ │
+   │  │ Linear → ReLU → Linear        │ │
+   │  └───────────────────────────────┘ │
+   │           ↓                         │
+   │  ┌───────────────────────────────┐ │
+   │  │ Layer Normalization           │ │
+   │  └───────────────────────────────┘ │
+   │           ↓                         │
+   │  ┌───────────────────────────────┐ │
+   │  │ Residual Connection           │ │
+   │  └───────────────────────────────┘ │
+   └─────────────────────────────────────┘
+        |
+        v
+   Contextualized Features [1, 149, 1024]
+
+
+6. POOLING & CLASSIFICATION HEAD
+================================================================================
+   
+   Contextualized Features
+        |
+        v
+   ┌─────────────────────────────────────┐
+   │  Mean Pooling                       │
+   │  Average across time dimension      │
+   └─────────────────────────────────────┘
+        |
+        v
+   Pooled Features [1, 1024]
+        |
+        v
+   ┌─────────────────────────────────────┐
+   │  Classification Head                │
+   │                                     │
+   │  Linear(1024 → 256)                 │
+   │  ReLU Activation                    │
+   │  Dropout(0.1)                       │
+   │  Linear(256 → 7)                    │
+   └─────────────────────────────────────┘
+        |
+        v
+   Logits [2.5, 1.2, 0.3, -0.5, -1.0, -1.5, -2.0]
+   (Raw scores for each emotion)
+
+
+7. SOFTMAX ACTIVATION
+================================================================================
+   
+   Logits
+        |
+        v
+   ┌─────────────────────────────────────┐
+   │  Softmax Function                   │
+   │                                     │
+   │  P(i) = exp(logit_i) / Σ exp(logit_j) │
+   │                                     │
+   │  Example:                           │
+   │  logit = [2.5, 1.2, 0.3, ...]       │
+   │  exp   = [12.18, 3.32, 1.35, ...]   │
+   │  sum   = 16.85                      │
+   │  prob  = [0.72, 0.20, 0.08, ...]    │
+   └─────────────────────────────────────┘
+        |
+        v
+   Probabilities [0.85, 0.10, 0.03, 0.01, 0.00, 0.00, 0.00]
+   (Sum = 1.0)
+
+
+8. PREDICTION
+================================================================================
+   
+   Probabilities
+        |
+        v
+   ┌─────────────────────────────────────┐
+   │  Find Maximum Probability           │
+   │                                     │
+   │  argmax([0.85, 0.10, 0.03, ...])    │
+   │  = 0 (index)                        │
+   │                                     │
+   │  Map to Emotion:                    │
+   │  Index 0 → "happy"                  │
+   │                                     │
+   │  Confidence = 0.85 (85%)            │
+   └─────────────────────────────────────┘
+        |
+        v
+   Final Result:
+   Emotion: HAPPY 😊
+   Confidence: 85%
+
+
+9. OUTPUT TO USER
+================================================================================
+   
+   ┌─────────────────────────────────────┐
+   │  🎯 PREDICTION RESULT               │
+   │  ================================   │
+   │                                     │
+   │  😊  Detected Emotion: HAPPY        │
+   │  ✓  Confidence: 85.00%              │
+   │     Confidence Level: HIGH ✓✓✓      │
+   │                                     │
+   │  📊 Confidence Scores:              │
+   │  ================================   │
+   │  1. HAPPY    ████████████████░░ 85% │
+   │  2. NEUTRAL  ██░░░░░░░░░░░░░░░░ 10% │
+   │  3. SURPRISE █░░░░░░░░░░░░░░░░░  3% │
+   └─────────────────────────────────────┘
+
+
+================================================================================
+                        MODEL ARCHITECTURE SUMMARY
+================================================================================
+
+Input:  Audio Waveform [48000 samples]
+         ↓
+CNN:    7 Convolutional Layers
+         ↓
+Trans:  24 Transformer Encoder Layers
+         ↓
+Pool:   Mean Pooling
+         ↓
+Class:  Classification Head (2 Linear Layers)
+         ↓
+Soft:   Softmax Activation
+         ↓
+Output: 7 Emotion Probabilities
+
+
+================================================================================
+                        KEY PARAMETERS
+================================================================================
+
+Model Name:         superb/hubert-large-superb-er
+Total Parameters:   ~300 million
+Model Size:         1.26 GB
+Hidden Dimensions:  1024
+Attention Heads:    16 per layer
+Transformer Layers: 24
+CNN Layers:         7
+Output Classes:     7 emotions
+
+Sample Rate:        16,000 Hz
+Input Length:       Variable (padded)
+Processing Time:    2-3 seconds (CPU)
+Memory Usage:       2-4 GB RAM
+
+
+================================================================================
+                        EMOTION CLASSES
+================================================================================
+
+Index  Emotion      Emoji
+  0    neutral      😐
+  1    happy        😊
+  2    sad          😢
+  3    angry        😠
+  4    fear         😨
+  5    disgust      🤢
+  6    surprise     😲
+
+
+================================================================================
+                        MATHEMATICAL OPERATIONS
+================================================================================
+
+1. Convolution:
+   output = Σ(input * kernel) + bias
+
+2. Self-Attention:
+   Attention(Q,K,V) = softmax(QK^T / √d_k) * V
+
+3. Softmax:
+   P(i) = exp(x_i) / Σ exp(x_j)
+
+4. ReLU:
+   f(x) = max(0, x)
+
+5. Layer Normalization:
+   y = (x - μ) / √(σ² + ε)
+
+
+================================================================================
+                        CODE LOCATION
+================================================================================
+
+Main AI Logic:      src/emotion_detector.py
+Audio Processing:   src/audio_processor.py
+Model Loading:      Line 50-60 in emotion_detector.py
+Inference:          Line 80-100 in emotion_detector.py
+Softmax:            Line 95 in emotion_detector.py
+Prediction:         Line 98-105 in emotion_detector.py
+
+
+================================================================================
+                        TRAINING INFORMATION
+================================================================================
+
+Pre-training:
+- Dataset: LibriSpeech (960 hours)
+- Task: Masked prediction
+- Organization: Facebook AI Research
+
+Fine-tuning:
+- Dataset: IEMOCAP, RAVDESS, others
+- Task: Emotion classification
+- Classes: 7 emotions
+- Accuracy: 75-85%
+
+
+================================================================================
